@@ -50,7 +50,7 @@ body {
     align-items: center;
 }
 
-.header-content { text-align: center; margin-bottom: 4vh; }
+.header-content { text-align: center; margin-bottom: 2vh; }
 .arabic-text { font-size: 6rem; color: var(--gold); margin-bottom: 10px; }
 
 .info-group {
@@ -65,26 +65,65 @@ body {
 .date-text { font-size: 1.5rem; opacity: 0.9; }
 .hijri-text { font-size: 2rem; color: var(--accent); font-weight: 800; margin-top: 10px; }
 
-.cards-grid { display: flex; justify-content: center; gap: 20px; width: 95vw; }
+/* GRID KARTU KONSISTEN */
+.cards-grid { 
+    display: flex; 
+    justify-content: center; 
+    gap: 25px; 
+    width: 95vw; 
+    align-items: center;
+}
 
 .card {
     background: var(--glass);
     border: 1px solid rgba(255,255,255,0.2);
     border-radius: 20px;
-    padding: 3vh 1vw;
+    padding: 2vh 1vw;
     flex: 1;
     text-align: center;
     backdrop-filter: blur(8px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 24vh; 
+    transition: all 0.4s ease;
 }
 
-.card-label { font-size: 1.6rem; color: #a7ffeb; font-weight: bold; margin-bottom: 10px; }
-.card-time { font-size: 4rem; font-weight: 800; }
+.card-label { font-size: 1.8rem; color: #a7ffeb; font-weight: bold; margin-bottom: 5px; }
+.card-time { font-size: 4.5rem; font-weight: 800; line-height: 1.1; }
 
 .card.active {
-    background: rgba(52, 232, 158, 0.4);
+    background: rgba(46, 204, 113, 0.35);
     border-color: var(--accent);
-    transform: scale(1.1);
-    box-shadow: 0 0 50px rgba(52, 232, 158, 0.5);
+    transform: scale(1.06);
+    box-shadow: 0 15px 40px rgba(52, 232, 158, 0.4);
+}
+
+/* KOTAK TIMER BESAR & TEGAS (PENGGANTI KOTAK MERAH) */
+.card-timer {
+    font-size: 3.2vh; 
+    font-weight: 900;
+    font-family: 'Courier New', Courier, monospace;
+    color: transparent; 
+    margin-top: 12px;
+    min-height: 4.5vh; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    width: 90%;
+}
+
+.card.active .card-timer,
+.card-timer.countdown-active {
+    color: #ffffff !important; 
+    background: rgba(0, 0, 0, 0.55) !important; 
+    padding: 4px 12px;
+    border-radius: 8px;
+    letter-spacing: 1.5px;
+    box-shadow: inset 0 0 6px rgba(0,0,0,0.5);
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
 }
 
 .footer-section {
@@ -96,28 +135,20 @@ body {
     border-top: 4px solid var(--accent);
 }
 
-/* Style area kotak merah/timer di dalam kartu */
-.card-timer {
-    font-size: 1.5rem;
-    font-weight: bold;
-    font-family: 'Courier New', Courier, monospace;
-    margin-top: 15px;
-    min-height: 2rem; /* Menjaga ukuran box tetap stabil saat kosong */
-    color: transparent; /* Sembunyikan text bawaan saat tidak aktif */
-    transition: all 0.3s ease;
-}
-
-/* Style khusus ketika countdown aktif di shalat terdekat */
-.card-timer.countdown-active {
-    color: #f1c40f; /* Warna emas agar kontras di dalam kartu hijau */
-    background: rgba(0, 0, 0, 0.25);
-    padding: 4px 10px;
-    border-radius: 8px;
-    display: inline-block;
-    letter-spacing: 1px;
-    box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
-}
-
 .clock-box { font-size: 7rem; font-weight: bold; color: var(--gold); font-family: monospace; min-width: 450px; }
 .hadist-box { flex: 1; margin-left: 50px; padding-left: 40px; border-left: 8px solid var(--accent); }
 #hadist-text { font-size: 2.4rem; font-style: italic; line-height: 1.3; font-weight: 500; }
+
+/* RESPONSIVE TABLET */
+@media only screen and (max-width: 1024px) {
+    .arabic-text { font-size: 4rem; }
+    .info-group { padding: 15px 30px; }
+    .cards-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; width: 90vw; }
+    .card { min-height: 20vh; padding: 15px 10px; }
+    .card-label { font-size: 1.4rem; }
+    .card-time { font-size: 3rem; }
+    .card-timer { font-size: 2.8vh; min-height: 4vh; }
+    .clock-box { font-size: 4rem; min-width: 250px; }
+    #hadist-text { font-size: 1.6rem; }
+    .marquee-content { font-size: 2.5vh; }
+}
