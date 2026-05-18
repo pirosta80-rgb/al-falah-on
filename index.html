@@ -38,10 +38,9 @@
 
         <script>
         const PRAYER_NAMES = { Fajr: "Subuh", Sunrise: "Syuruq", Dhuhr: "Dzuhur", Asr: "Ashar", Maghrib: "Maghrib", Isha: "Isya" };
-        const ADJUSTMENTS = { Fajr: -18, Sunrise: -3, Dhuhr: 4, Asr: 3, Maghrib: 3, Isha: 16 };
+const ADJUSTMENTS = { Fajr: -18, Sunrise: -3, Dhuhr: 4, Asr: 3, Maghrib: 3, Isha: 16 };
 
-        // FUNGSI HIJRIAH MANUAL (PASTI AKURAT)
-        function getHijriDate(date) {
+function getHijriDate(date) {
     let day = date.getDate();
     let month = date.getMonth() + 1;
     let year = date.getFullYear();
@@ -50,7 +49,6 @@
     let b = 2 - a + Math.floor(a / 4);
     let jd = Math.floor(365.25 * (year + 4716)) + Math.floor(30.6001 * (month + 1)) + day + b - 1524;
     
-    // KOREKSI: Gunakan +1 untuk memajukan hari agar pas 20 Dzulqo'dah di Bekasi hari ini
     let ijd = jd + 1; 
     let z = ijd - 1948440;
     let cyc = Math.floor(z / 10631);
@@ -64,12 +62,9 @@
     let finalMonthIdx = m_h - 1;
     let finalDay = d_h;
 
-    // VALIDASI UTAMA: Kalender Hijriah tidak pernah ada tanggal 31 di bulan apapun!
     if (finalDay > 30) {
-        finalDay = 1;         // Reset ke tanggal 1
-        finalMonthIdx += 1;   // Maju ke bulan berikutnya
-        
-        // Jika bulan sudah melewati Dzulhijjah (index 11), reset ke Muharram dan tambah tahun
+        finalDay = 1;         
+        finalMonthIdx += 1;   
         if (finalMonthIdx > 11) {
             finalMonthIdx = 0;
             finalYear += 1;
@@ -80,74 +75,134 @@
     return `${finalDay} ${bulan[finalMonthIdx]} ${finalYear} H`;
 }
 
-        function updateDateTime() {
-            const now = new Date();
-            document.getElementById('digital-clock').textContent = now.toLocaleTimeString('en-GB');
-            document.getElementById('date-display').textContent = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            document.getElementById('hijri-display').textContent = getHijriDate(now);
+function updateDateTime() {
+    const now = new Date();
+    document.getElementById('digital-clock').textContent = now.toLocaleTimeString('en-GB');
+    document.getElementById('date-display').textContent = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    document.getElementById('hijri-display').textContent = getHijriDate(now);
+}
+
+async function getPrayers() {
+    try {
+        const res = await fetch("https://api.aladhan.com/v1/timings?latitude=-6.2772&longitude=107.0452&method=99&fajr=20&isha=11");
+        const json = await res.json();
+        const timings = json.data.timings;
+        const finalJadwal = {};
+        let html = "";
+
+        Object.keys(PRAYER_NAMES).forEach(key => {
+            const [h, m] = timings[key].split(':').map(Number);
+            const d = new Date();
+            d.setHours(h, m + ADJUSTMENTS[key]);
+            const timeStr = d.toTimeString().slice(0, 5);
+            finalJadwal[PRAYER_NAMES[key]] = timeStr;
+            
+            // PERBAIKAN: Menambahkan elemen div dengan class 'card-timer' di bawah waktu shalat
+            html += `
+                <div class="card" data-sholat="${PRAYER_NAMES[key]}">
+                    <div class="card-label">${PRAYER_NAMES[key]}</div>
+                    <div class="card-time">${timeStr}</div>
+                    <div class="card-timer" id="timer-${PRAYER_NAMES[key]}">- - : - -</div>
+                </div>`;
+        });
+
+        document.getElementById('prayer-cards').innerHTML = html;
+        localStorage.setItem("jadwalSholat", JSON.stringify(finalJadwal));
+        checkStatus();
+    } catch (err) { console.error(err); }
+}
+
+function checkStatus() {
+    const jadwal = JSON.parse(localStorage.getItem("jadwalSholat"));
+    if (!jadwal) return;
+    
+    const now = new Date();
+    const nowStr = now.toTimeString().slice(0, 5);
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+    const nowSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+
+    let next = "Subuh";
+    let nextMins = 0;
+
+    // 1. Cari tahu waktu shalat berikutnya
+    for (const [name, time] of Object.entries(jadwal)) {
+        const [h, m] = time.split(':').map(Number);
+        if (nowStr === time && name !== "Syuruq") {
+            window.location.href = "iqomah.html";
+            return;
         }
-
-        async function getPrayers() {
-            try {
-                const res = await fetch("https://api.aladhan.com/v1/timings?latitude=-6.2772&longitude=107.0452&method=99&fajr=20&isha=11");
-                const json = await res.json();
-                const timings = json.data.timings;
-                const finalJadwal = {};
-                let html = "";
-
-                Object.keys(PRAYER_NAMES).forEach(key => {
-                    const [h, m] = timings[key].split(':').map(Number);
-                    const d = new Date();
-                    d.setHours(h, m + ADJUSTMENTS[key]);
-                    const timeStr = d.toTimeString().slice(0, 5);
-                    finalJadwal[PRAYER_NAMES[key]] = timeStr;
-                    html += `<div class="card" data-sholat="${PRAYER_NAMES[key]}"><div class="card-label">${PRAYER_NAMES[key]}</div><div class="card-time">${timeStr}</div></div>`;
-                });
-
-                document.getElementById('prayer-cards').innerHTML = html;
-                localStorage.setItem("jadwalSholat", JSON.stringify(finalJadwal));
-                checkStatus();
-            } catch (err) { console.error(err); }
+        if ((h * 60 + m) > nowMins) { 
+            next = name; 
+            break; 
         }
+    }
 
-        function checkStatus() {
-            const jadwal = JSON.parse(localStorage.getItem("jadwalSholat"));
-            if (!jadwal) return;
-            const now = new Date();
-            const nowStr = now.toTimeString().slice(0, 5);
-            const nowMins = now.getHours() * 60 + now.getMinutes();
-            let next = "Subuh";
-            for (const [name, time] of Object.entries(jadwal)) {
-                const [h, m] = time.split(':').map(Number);
-                if (nowStr === time && name !== "Syuruq") window.location.href = "iqomah.html";
-                if ((h * 60 + m) > nowMins) { next = name; break; }
+    // Ambil target waktu shalat berikutnya dalam hitungan menit untuk validasi grid
+    const [nextH, nextM] = jadwal[next].split(':').map(Number);
+    nextMins = nextH * 60 + nextM;
+
+    // 2. Hitung mundur real-time (Countdown) dan update ke UI
+    Object.entries(jadwal).forEach(([name, time]) => {
+        const timerEl = document.getElementById(`timer-${name}`);
+        if (!timerEl) return;
+
+        if (name === next) {
+            // Hitung selisih detik total agar countdown akurat per detik
+            const [h, m] = time.split(':').map(Number);
+            let targetSecs = h * 3600 + m * 60;
+            
+            // Jika waktu shalat berikutnya menyeberang ke hari esok (misal setelah Isya mencari Subuh)
+            if (targetSecs < nowSecs) {
+                targetSecs += 24 * 3600;
             }
-            document.querySelectorAll('.card').forEach(c => c.classList.toggle('active', c.dataset.sholat === next));
-        }
 
-        const listHadist = [
-            "Sebaik-baik manusia adalah yang paling bermanfaat bagi manusia lainnya. (HR. Ahmad)",
-            "Senyummu di depan saudaramu adalah sedekah bagimu. (HR Tirmidzi)",
-            "Luruskan dan rapatkan shaf sebelum memulai shalat.",
-            "Shalat tepat waktu adalah amalan yang paling dicintai Allah."
-        ];
-        let hIdx = 0;
-        function rotateHadist() {
-            const el = document.getElementById('hadist-text');
-            el.style.opacity = 0;
-            setTimeout(() => {
-                el.textContent = listHadist[hIdx];
-                el.style.opacity = 1;
-                hIdx = (hIdx + 1) % listHadist.length;
-            }, 500);
-        }
+            const diffSecs = targetSecs - nowSecs;
+            const diffH = Math.floor(diffSecs / 3600);
+            const diffM = Math.floor((diffSecs % 3600) / 60);
+            const diffS = diffSecs % 60;
 
-        setInterval(updateDateTime, 1000);
-        setInterval(checkStatus, 1000);
-        setInterval(rotateHadist, 15000);
-        getPrayers();
-        updateDateTime();
-        rotateHadist();
+            // Format tampilan text timer: jika di atas 1 jam tampilkan jamnya juga
+            if (diffH > 0) {
+                timerEl.textContent = `-${String(diffH).padStart(2,'0')}:${String(diffM).padStart(2,'0')}:${String(diffS).padStart(2,'0')}`;
+            } else {
+                timerEl.textContent = `-${String(diffM).padStart(2,'0')}:${String(diffS).padStart(2,'0')}`;
+            }
+            timerEl.classList.add('countdown-active');
+        } else {
+            // Bersihkan teks dan class jika bukan waktu shalat terdekat
+            timerEl.textContent = "";
+            timerEl.classList.remove('countdown-active');
+        }
+    });
+
+    // Toggle class active untuk kartu yang sedang ditunggu
+    document.querySelectorAll('.card').forEach(c => c.classList.toggle('active', c.dataset.sholat === next));
+}
+
+const listHadist = [
+    "Sebaik-baik manusia adalah yang paling bermanfaat bagi manusia lainnya. (HR. Ahmad)",
+    "Senyummu di depan saudaramu adalah sedekah bagimu. (HR Tirmidzi)",
+    "Luruskan dan rapatkan shaf sebelum memulai shalat.",
+    "Shalat tepat waktu adalah amalan yang paling dicintai Allah."
+];
+let hIdx = 0;
+function rotateHadist() {
+    const el = document.getElementById('hadist-text');
+    if (!el) return;
+    el.style.opacity = 0;
+    setTimeout(() => {
+        el.textContent = listHadist[hIdx];
+        el.style.opacity = 1;
+        hIdx = (hIdx + 1) % listHadist.length;
+    }, 500);
+}
+
+setInterval(updateDateTime, 1000);
+setInterval(checkStatus, 1000); // Berjalan tiap detik agar detikan timer mulus
+setInterval(rotateHadist, 15000);
+getPrayers();
+updateDateTime();
+rotateHadist();
     </script>
     </body>
 </html>

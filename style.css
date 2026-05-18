@@ -96,6 +96,28 @@ body {
     border-top: 4px solid var(--accent);
 }
 
+/* Style area kotak merah/timer di dalam kartu */
+.card-timer {
+    font-size: 1.5rem;
+    font-weight: bold;
+    font-family: 'Courier New', Courier, monospace;
+    margin-top: 15px;
+    min-height: 2rem; /* Menjaga ukuran box tetap stabil saat kosong */
+    color: transparent; /* Sembunyikan text bawaan saat tidak aktif */
+    transition: all 0.3s ease;
+}
+
+/* Style khusus ketika countdown aktif di shalat terdekat */
+.card-timer.countdown-active {
+    color: #f1c40f; /* Warna emas agar kontras di dalam kartu hijau */
+    background: rgba(0, 0, 0, 0.25);
+    padding: 4px 10px;
+    border-radius: 8px;
+    display: inline-block;
+    letter-spacing: 1px;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+}
+
 .clock-box { font-size: 7rem; font-weight: bold; color: var(--gold); font-family: monospace; min-width: 450px; }
 .hadist-box { flex: 1; margin-left: 50px; padding-left: 40px; border-left: 8px solid var(--accent); }
 #hadist-text { font-size: 2.4rem; font-style: italic; line-height: 1.3; font-weight: 500; }
