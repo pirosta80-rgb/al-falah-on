@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Signage Masjid Al-Falah</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="marquee-bar">
+        <div class="marquee-content">
+            <span>MASJID AL-FALAH • PT. TOPSYSTEM ASIA BASE • Kawasan Industri MM2100, Cikedokan, Cikarang Barat, Bekasi, Jawa Barat - Indonesia </span>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="header-content">
+            <h1 class="arabic-text">أهلاً وسهلاً</h1>
+            <div class="info-group">
+                <h2 class="location-title">Waktu Shalat Bekasi</h2>
+                <div id="date-display" class="date-text"></div>
+                <div id="hijri-display" class="hijri-text"></div>
+            </div>
+        </div>
+
+        <div id="prayer-cards" class="cards-grid"></div>
+    </div>
+
+    <div class="footer-section">
+        <div id="digital-clock" class="clock-box">00:00:00</div>
+        <div class="hadist-box">
+            <p id="hadist-text">Memuat hadist...</p>
+        </div>
+    </div>
+
+    <script>
+        const PRAYER_NAMES = { Fajr: "Subuh", Sunrise: "Syuruq", Dhuhr: "Dzuhur", Asr: "Ashar", Maghrib: "Maghrib", Isha: "Isya" };
+        const ADJUSTMENTS = { Fajr: -18, Sunrise: -3, Dhuhr: 4, Asr: 3, Maghrib: 3, Isha: 16 };
+
+        // FUNGSI HIJRIAH MANUAL (PASTI AKURAT)
+        function getHijriDate(date) {
+            let day = date.getDate();
+            let month = date.getMonth() + 1;
+            let year = date.getFullYear();
+            if (month < 3) { year -= 1; month += 12; }
+            let a = Math.floor(year / 100);
+            let b = 2 - a + Math.floor(a / 4);
+            let jd = Math.floor(365.25 * (year + 4716)) + Math.floor(30.6001 * (month + 1)) + day + b - 1524;
+            
+            let ijd = jd + 1; // Ubah ke 1 atau -1 jika ingin koreksi H+1 / H-1
+            let z = ijd - 1948440;
+            let cyc = Math.floor(z / 10631);
+            z = z % 10631;
+            let y_h = Math.floor(z / 354.366);
+            z = Math.floor(z - y_h * 354.366);
+            let m_h = Math.floor((z + 28.5001) / 29.5);
+            let d_h = Math.floor(z - m_h * 29.5 + 30.6);
+
+            const bulan = ["Muharram", "Safar", "Rabi'ul Awwal", "Rabi'ul Akhir", "Jumadil Awwal", "Jumadil Akhir", "Rajab", "Sya'ban", "Ramadhan", "Syawal", "Dzulqo'dah", "Dzulhijjah"];
+            return `${d_h} ${bulan[m_h - 1]} ${y_h + cyc * 30} H`;
+        }
+
+        function updateDateTime() {
+            const now = new Date();
+            document.getElementById('digital-clock').textContent = now.toLocaleTimeString('en-GB');
+            document.getElementById('date-display').textContent = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('hijri-display').textContent = getHijriDate(now);
+        }
+
+        async function getPrayers() {
+            try {
+                const res = await fetch("https://api.aladhan.com/v1/timings?latitude=-6.2772&longitude=107.0452&method=99&fajr=20&isha=11");
+                const json = await res.json();
+                const timings = json.data.timings;
+                const finalJadwal = {};
+                let html = "";
+
+                Object.keys(PRAYER_NAMES).forEach(key => {
+                    const [h, m] = timings[key].split(':').map(Number);
+                    const d = new Date();
+                    d.setHours(h, m + ADJUSTMENTS[key]);
+                    const timeStr = d.toTimeString().slice(0, 5);
+                    finalJadwal[PRAYER_NAMES[key]] = timeStr;
+                    html += `<div class="card" data-sholat="${PRAYER_NAMES[key]}"><div class="card-label">${PRAYER_NAMES[key]}</div><div class="card-time">${timeStr}</div></div>`;
+                });
+
+                document.getElementById('prayer-cards').innerHTML = html;
+                localStorage.setItem("jadwalSholat", JSON.stringify(finalJadwal));
+                checkStatus();
+            } catch (err) { console.error(err); }
+        }
+
+        function checkStatus() {
+            const jadwal = JSON.parse(localStorage.getItem("jadwalSholat"));
+            if (!jadwal) return;
+            const now = new Date();
+            const nowStr = now.toTimeString().slice(0, 5);
+            const nowMins = now.getHours() * 60 + now.getMinutes();
+            let next = "Subuh";
+            for (const [name, time] of Object.entries(jadwal)) {
+                const [h, m] = time.split(':').map(Number);
+                if (nowStr === time && name !== "Syuruq") window.location.href = "iqomah.html";
+                if ((h * 60 + m) > nowMins) { next = name; break; }
+            }
+            document.querySelectorAll('.card').forEach(c => c.classList.toggle('active', c.dataset.sholat === next));
+        }
+
+        const listHadist = [
+            "Sebaik-baik manusia adalah yang paling bermanfaat bagi manusia lainnya. (HR. Ahmad)",
+            "Senyummu di depan saudaramu adalah sedekah bagimu. (HR Tirmidzi)",
+            "Luruskan dan rapatkan shaf sebelum memulai shalat.",
+            "Shalat tepat waktu adalah amalan yang paling dicintai Allah."
+        ];
+        let hIdx = 0;
+        function rotateHadist() {
+            const el = document.getElementById('hadist-text');
+            el.style.opacity = 0;
+            setTimeout(() => {
+                el.textContent = listHadist[hIdx];
+                el.style.opacity = 1;
+                hIdx = (hIdx + 1) % listHadist.length;
+            }, 500);
+        }
+
+        setInterval(updateDateTime, 1000);
+        setInterval(checkStatus, 1000);
+        setInterval(rotateHadist, 15000);
+        getPrayers();
+        updateDateTime();
+        rotateHadist();
+    </script>
+</body>
+</html>
