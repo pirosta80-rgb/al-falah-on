@@ -48,7 +48,7 @@
             let b = 2 - a + Math.floor(a / 4);
             let jd = Math.floor(365.25 * (year + 4716)) + Math.floor(30.6001 * (month + 1)) + day + b - 1524;
             
-            let ijd = jd + 2; // Ubah ke 1 atau -1 jika ingin koreksi H+1 / H-1
+            let ijd = jd + 1; // Ubah ke 1 atau -1 jika ingin koreksi H+1 / H-1
             let z = ijd - 1948440;
             let cyc = Math.floor(z / 10631);
             z = z % 10631;
