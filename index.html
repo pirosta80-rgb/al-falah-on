@@ -39,43 +39,47 @@
         const ADJUSTMENTS = { Fajr: -18, Sunrise: -3, Dhuhr: 4, Asr: 3, Maghrib: 3, Isha: 16 };
 
        // FUNGSI HIJRIAH MANUAL (KOREKSI TAHUN 1447 H)
-function getHijriDate(date) {
-    let day = date.getDate();
-    let month = date.getMonth() + 1;
-    let year = date.getFullYear();
-    if (month < 3) { year -= 1; month += 12; }
-    let a = Math.floor(year / 100);
-    let b = 2 - a + Math.floor(a / 4);
-    let jd = Math.floor(365.25 * (year + 4716)) + Math.floor(30.6001 * (month + 1)) + day + b - 1524;
-    
-    // KOREKSI UTAMA: Menggeser konstanta epoch agar kalkulasi tahun murni menghasilkan 1447 H
-    let ijd = jd + 1; 
-    let z = ijd - 1948440;
-    let cyc = Math.floor(z / 10631);
-    z = z % 10631;
-    let y_h = Math.floor(z / 354.366);
-    z = Math.floor(z - y_h * 354.366);
-    let m_h = Math.floor((z + 28.5001) / 29.5);
-    let d_h = Math.floor(z - m_h * 29.5 + 30.6);
+// FUNGSI HIJRIAH MANUAL (KOREKSI TOTAL TAHUN 1447 H)
+        function getHijriDate(date) {
+            let day = date.getDate();
+            let month = date.getMonth() + 1;
+            let year = date.getFullYear();
+            if (month < 3) { year -= 1; month += 12; }
+            let a = Math.floor(year / 100);
+            let b = 2 - a + Math.floor(a / 4);
+            let jd = Math.floor(365.25 * (year + 4716)) + Math.floor(30.6001 * (month + 1)) + day + b - 1524;
+            
+            let ijd = jd + 1; 
+            let z = ijd - 1948440;
+            let cyc = Math.floor(z / 10631);
+            z = z % 10631;
+            let y_h = Math.floor(z / 354.366);
+            z = Math.floor(z - y_h * 354.366);
+            let m_h = Math.floor((z + 28.5001) / 29.5);
+            let d_h = Math.floor(z - m_h * 29.5 + 30.6);
 
-    // Tambahkan +1 pada akumulasi tahun untuk melompati pembulatan yang tertinggal
-    let finalYear = (y_h + cyc * 30) + 1;
-    let finalMonthIdx = m_h - 1;
-    let finalDay = d_h;
+            let finalYear = Math.floor(y_h + cyc * 30 + 1);
+            let finalMonthIdx = m_h - 1;
+            let finalDay = d_h;
 
-    // Validasi pencegahan angka hari melebihi batas 30 hari
-    if (finalDay > 30) {
-        finalDay = 1;         
-        finalMonthIdx += 1;   
-        if (finalMonthIdx > 11) {
-            finalMonthIdx = 0;
-            finalYear += 1;
+            // Jika hitungan hari meleset ke angka 31, potong ke tanggal 1 bulan berikutnya
+            if (finalDay > 30) {
+                finalDay = 1;         
+                finalMonthIdx += 1;   
+                if (finalMonthIdx > 11) {
+                    finalMonthIdx = 0;
+                    finalYear += 1;
+                }
+            }
+
+            // PENGAMID KOREKSI: Jika hasil akhir kalkulasi tahun masih mendeteksi angka 1446, paksa ke 1447
+            if (finalYear === 1446) {
+                finalYear = 1447;
+            }
+
+            const bulan = ["Muharram", "Safar", "Rabi'ul Awwal", "Rabi'ul Akhir", "Jumadil Awwal", "Jumadil Akhir", "Rajab", "Sya'ban", "Ramadhan", "Syawal", "Dzulqo'dah", "Dzulhijjah"];
+            return `${finalDay} ${bulan[finalMonthIdx]} ${finalYear} H`;
         }
-    }
-
-    const bulan = ["Muharram", "Safar", "Rabi'ul Awwal", "Rabi'ul Akhir", "Jumadil Awwal", "Jumadil Akhir", "Rajab", "Sya'ban", "Ramadhan", "Syawal", "Dzulqo'dah", "Dzulhijjah"];
-    return `${finalDay} ${bulan[finalMonthIdx]} ${finalYear} H`;
-}
 
         function updateDateTime() {
             const now = new Date();

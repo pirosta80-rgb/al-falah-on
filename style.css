@@ -7,7 +7,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-    background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), 
+    background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), 
                 url('./img/pexels-tarik-sami-2136439315-33169796.jpg') no-repeat center center/cover;
     height: 100vh;
     font-family: 'Segoe UI', sans-serif;
